@@ -1,0 +1,153 @@
+Project Proposal: Box Office Gambler
+CS 4580 — Automated Decision Systems
+Freeman Irabaruta
+April 2026
+
+
+1. The Problem
+
+A film studio deciding whether to greenlight a movie is making a classic
+decision under uncertainty. The budget is fixed, but everything else —
+how big the opening weekend will be, whether audiences show up after week
+one, how the film performs overseas — is uncertain. Studios deal with this
+by relying on pattern matching from past experience and gut instinct,
+which is exactly the kind of heuristic-driven reasoning we studied in
+the Kahneman and Tversky material on framing effects and anchoring. An
+executive who just greenlit a $200M hit is going to anchor on that
+success and overweight the next similar pitch. An executive coming off a
+flop does the opposite.
+
+I want to build a tool that replaces that heuristic reasoning with a
+structured Monte Carlo simulation, while keeping the decision process
+fully transparent — no black boxes, no hidden logic.
+
+
+2. What the System Does
+
+Box Office Gambler takes in a set of parameters describing a hypothetical
+movie (production budget, genre, release month, lead actor star power,
+franchise status, MPAA rating) and runs thousands of simulated financial
+outcomes. Each trial samples from empirical distributions calibrated to
+real box office patterns: how opening weekends relate to budgets, how
+different genres hold up week-over-week, how well certain types of films
+travel internationally, and so on.
+
+The output is a greenlight decision — one of GREEN LIGHT, PROCEED WITH
+CAUTION, or PASS — along with the full probability distributions that
+generated it.
+
+This maps directly onto the course's goals/plans/resources framework.
+The studio's goal is profitability (or more precisely, maximizing the
+probability of recouping the investment). The plan is the configuration
+of the movie itself — genre, timing, casting tier. The key resource is
+the production budget, which constrains what's possible and defines the
+threshold for success. The simulation evaluates how likely the plan is
+to achieve the goal given the resource constraints.
+
+
+3. How It Explains Decisions
+
+Explanation is the core design concern, and I'm building it into the
+system at three levels. This connects to what we discussed about
+explanation quality — specifically, moving from mindless explanations
+(just restating a conclusion) toward mindful ones (showing the reasoning
+and the conditions under which the conclusion might change).
+
+Factor attribution. After each simulation run, the system generates a
+plain-English assessment of each input factor — tagged as positive,
+negative, or neutral — that explains its specific impact on the outcome.
+For example: "Horror films have high total multipliers (3.5x budget on
+average), but are heavily front-loaded — 52% of domestic gross lands in
+opening weekend, leaving little room for recovery if word-of-mouth is
+weak." These are direct readouts of the model's actual parameters, not
+post-hoc rationalizations. The explanation is the model.
+
+Probability distributions. Instead of giving a single number ("this
+movie will gross $300M"), the system shows the full histogram of
+simulated outcomes with break-even and median lines marked. This is a
+direct counter to the anchoring bias we covered in the behavioral
+economics lectures — a point estimate invites anchoring, but a
+distribution forces the user to confront the spread of possible outcomes.
+Showing a user that there's a 15% chance of losing everything alongside
+a 30% chance of a blockbuster is fundamentally different from showing
+them the average of those two scenarios.
+
+Counterfactual analysis. The system re-runs the simulation across
+alternative values for genre and release month, holding everything else
+constant, and displays the comparison. This answers "what would change if
+I made a different choice?" — which is the structure of a counterfactual
+explanation. If a user picks September for their action movie and the
+counterfactual chart shows that June would have added $80M to the median
+worldwide gross, that's a concrete, actionable piece of reasoning that
+explains not just what the decision is but why the alternative would be
+better.
+
+None of these methods require a secondary interpretability model or a
+surrogate approximation. Monte Carlo simulation is inherently transparent
+— the inputs are visible, the sampling process is straightforward, and
+the outputs decompose cleanly into the factors that produced them. This
+is an advantage over the machine-learning-plus-mimic-model approach
+listed in the project options: there's no gap between the model and its
+explanation.
+
+
+4. Connection to Course Techniques
+
+The project falls under suggested topic #11 (Monte Carlo simulation) and
+draws on several threads from the course:
+
+Decision strategies. The greenlight decision maps to a decision strategy
+with explicit criteria (probability of profit above 70% = green light,
+between 45-70% = caution, below 45% = pass). These thresholds are
+themselves debatable — a risk-tolerant studio might accept 50% — which
+opens the door to meta-strategy discussion about how the decision
+criteria themselves should be chosen.
+
+Behavioral economics. The system is designed to counteract specific
+biases. Anchoring: distributions instead of point estimates. Framing:
+the same information presented as both "probability of profit" and
+"probability of flop" to prevent a one-sided frame from dominating.
+Representativeness: the counterfactual analysis prevents users from
+pattern-matching on a single salient feature (e.g., "action movies
+always do well") by showing the full comparison.
+
+Explanation quality. The factor attributions aim for the mindful end of
+Langer's spectrum. A mindless explanation would be "the model says pass."
+A mindful one says "the model says pass because your $250M budget
+requires roughly $500M worldwide to break even, and the September
+release window historically depresses opening weekends by 40%, making
+that target unlikely — here's the probability distribution showing why."
+
+Qualitative reasoning. The factor labels (positive/negative/neutral)
+and the direction-of-effect descriptions ("this helps," "this hurts,"
+"this is roughly average") are a form of qualitative assessment layered
+on top of the quantitative simulation. The user gets both — the numbers
+and the qualitative interpretation of what those numbers mean in context.
+
+
+5. Implementation Plan
+
+The project is a Python web app built with Streamlit, with three modules:
+
+- data.py — Empirical priors for the simulation: genre multipliers,
+  seasonal release factors, star power tiers, franchise effects,
+  international performance ratios, and audience ceiling by rating.
+  These are calibrated to aggregate box office data from 2010-2024.
+
+- engine.py — The Monte Carlo engine. Accepts a movie description, runs
+  N trials (default 10,000), returns probability distributions and
+  computed metrics. Also contains the factor attribution logic and the
+  greenlight decision function.
+
+- app.py — The Streamlit interface. Sidebar for parameter input, main
+  area for the decision banner, distribution histograms (Plotly),
+  percentile tables, factor attribution panel, and counterfactual
+  comparison charts.
+
+Dependencies are minimal: streamlit, numpy, plotly. Everything runs in
+the Zoo environment with a standard pip install; no additional library
+approval needed.
+
+I already have a working prototype that runs locally and produces correct
+simulation outputs. Remaining work is polishing the counterfactual
+analysis section and writing the final documentation.
