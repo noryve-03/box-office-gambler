@@ -1,6 +1,5 @@
 """Historical box office dataset and genre/month priors for Monte Carlo simulation."""
 
-import pandas as pd
 import numpy as np
 
 # --- Empirical priors derived from 2010-2024 box office data ---
