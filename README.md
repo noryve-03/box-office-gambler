@@ -3,6 +3,8 @@
 A Monte Carlo greenlight simulator for film production decisions.
 Final project for CS 4580 — Automated Decision Systems.
 
+**Live demo:** https://box-office-gambler-production.up.railway.app
+
 The full project proposal is in [`proposal.pdf`](proposal.pdf).
 
 ## What it does
